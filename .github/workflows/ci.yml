@@ -30,8 +30,6 @@ jobs:
       STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
       STRIPE_PRICE_ID: ${{ secrets.STRIPE_PRICE_ID }}
     steps:
-      - if: ${{ env.STRIPE_API_KEY != '' }}
-        run: echo 'STRIPE_API_KEY env var is set'
       - if: ${{ env.STRIPE_API_KEY == '' }}
         run: echo 'STRIPE_API_KEY env var is NOT set'
       - uses: actions/checkout@v3
@@ -41,8 +39,14 @@ jobs:
       - name: Install Dependencies
         run: npm install
       - name: Build and Start Containers
-        run: STRIPE_API_KEY="$STRIPE_API_KEY" STRIPE_PRICE_ID="$STRIPE_PRICE_ID" docker-compose up -d
+        run: docker-compose up -d
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
       - name: Run Tests
         run: npm run test:integration
+      # If the tests fail, upload videos of what happened
+      - uses: actions/upload-artifact@v3
+        if: ${{ failure() }}
+        with:
+          name: Recordings
+          path: test-results/
